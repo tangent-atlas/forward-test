@@ -102,6 +102,7 @@ def test_the_daily_run_starts_after_freezing_and_handles_a_quarter(tmp_path, mon
     monkeypatch.setattr(run, "STATE", tmp_path / "state.json")
     monkeypatch.setattr(run, "TRACK", tmp_path / "track.csv")
     monkeypatch.setattr(run, "REPORTS", tmp_path / "reports")
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
 
     class Today(dt.date):
         value = dt.date(2026, 11, 3)

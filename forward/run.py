@@ -243,7 +243,7 @@ def daily() -> None:
         out = os.environ.get("GITHUB_OUTPUT")
         if path and out:
             with open(out, "a") as f:
-                f.write(f"report={path.relative_to(ROOT)}\nmonth={before[:7]}\n")
+                f.write(f"report={os.path.relpath(path, ROOT)}\nmonth={before[:7]}\n")
 
 
 if __name__ == "__main__":
