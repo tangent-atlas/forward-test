@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you refer to this forward test, please cite it as below."
+title: "The Ken 11 forward test"
+abstract: "A pre-registered, daily-updated forward test of a personal index of the 11 largest US companies (excluding Alphabet, Tesla and Meta) with a volatility thermostat, against SPY and SPY plus cash at the same risk."
+type: software
+authors:
+  - name: "Tangent Atlas"
+license: Apache-2.0
+repository-code: "https://github.com/tangent-atlas/forward-test"
+keywords: [forward test, pre-registration, volatility targeting, direct indexing, personal index]

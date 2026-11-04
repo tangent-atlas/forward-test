@@ -1,0 +1,45 @@
+name: Daily close
+
+on:
+  schedule:
+    - cron: "30 0 * * 2-6"     # 00:30 UTC, Tuesday to Saturday: after each weekday's US close (7:30 pm Eastern)
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "init (once, to freeze the starting holdings) or daily"
+        default: daily
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: track
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install pytest && python -m pytest -q
+      - name: Run
+        id: run
+        env:
+          EODHD_API_TOKEN: ${{ secrets.EODHD_API_TOKEN }}
+        run: python -m forward.run ${{ github.event.inputs.command || 'daily' }}
+      - name: Commit
+        run: |
+          git config user.name "forward-test"
+          git config user.email "forward-test@users.noreply.github.com"
+          git add state data reports
+          git diff --cached --quiet || git commit -m "Close of $(jq -r .last_date state/state.json)"
+          git push
+      - name: Monthly release
+        if: steps.run.outputs.month != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.run.outputs.month }}" --title "Results through ${{ steps.run.outputs.month }}" --notes-file "${{ steps.run.outputs.report }}"
