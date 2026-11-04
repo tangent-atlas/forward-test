@@ -4,8 +4,65 @@ import random
 
 import pytest
 
-from forward import joe10, rules, run
-from tests.test_forward import FakeMarket
+from forward import common, joe10, rules
+
+
+def stock(code, value, cik=None, volume=1e6, name=None, country="US", kind="Common Stock", exchange="NASDAQ"):
+    return rules.Candidate(code, cik or code, name or code + " Inc", kind, country, exchange, 100.0, volume, value / 100.0)
+
+
+def test_eligibility():
+    assert rules.eligible(stock("AAPL", 1e12))
+    assert rules.eligible(stock("TSLA", 1e12))                         # the Joe 10 excludes nothing
+    assert not rules.eligible(stock("TSM", 1e12, country="TW"))
+    assert not rules.eligible(stock("SPY", 1e12, kind="ETF"))
+    assert not rules.eligible(stock("EPD", 1e11, name="Enterprise Products Partners L.P."))
+    assert not rules.eligible(stock("BP", 1e11, name="BP plc ADR"))
+    assert not rules.eligible(stock("XYZ", 1e12, cik="1"), excluded_ciks={"1"})
+
+
+def test_share_classes_are_one_company_held_through_the_most_traded_class():
+    ranked = rules.rank([stock("GOOG", 4.1e12, cik="1652044", volume=2e7), stock("GOOGL", 4.2e12, cik="1652044", volume=3e7),
+                         stock("BRK-A", 1.1e12, cik="1067983", volume=1e3), stock("BRK-B", 1.1e12, cik="1067983", volume=5e6),
+                         stock("MSFT", 3e12)], size=5)
+    assert ranked == [("GOOGL", 4.2e12), ("MSFT", 3e12), ("BRK-B", 1.1e12)]
+
+
+def test_berkshire_is_counted_in_each_class_units():
+    assert rules.in_class_units("BRK-B", 1_436_000) == 2_154_000_000
+    assert rules.in_class_units("BRK-A", 2_154_000_000) == pytest.approx(1_436_000)
+    assert rules.in_class_units("AAPL", 1_000) == 1_000
+
+
+def test_quarter_dates():
+    assert rules.quarter_dates(2026, 12) == (dt.date(2026, 12, 11), dt.date(2026, 12, 18))
+    assert rules.quarter_dates(2027, 6) == (dt.date(2027, 6, 11), dt.date(2027, 6, 18))
+
+
+class FakeMarket:
+    """Business days with random prices from September 2026."""
+    def __init__(self, codes, end, holidays=()):
+        rnd = random.Random(1)
+        self.days = [d for d in (dt.date(2026, 9, 1) + dt.timedelta(n) for n in range((end - dt.date(2026, 9, 1)).days + 1))
+                     if d.weekday() < 5 and d not in holidays]
+        self.series = {}
+        for code in codes:
+            p, s = 100.0, {}
+            for d in self.days:
+                p *= 1 + rnd.gauss(0.0005, 0.015)
+                s[d] = {"close": p, "adjusted": p, "volume": 1e6}
+            self.series[code] = s
+        self.ranked_on = []
+
+    def daily(self, code, start, end):
+        return {d: v for d, v in self.series[code].items() if start <= d <= end}
+
+    def largest(self, limit=100):
+        return [c for c in self.series if c != "SPY"]
+
+    def company(self, code, on):
+        self.ranked_on.append(on)
+        return {"name": code, "type": "Common Stock", "country": "US", "exchange": "NYSE", "cik": code, "shares": 1e9}
 
 
 def reference(returns, weights, history):
@@ -74,10 +131,10 @@ def test_a_rebalance_sets_new_weights_and_keeps_the_stock_share():
 
 def test_the_daily_run_starts_after_freezing_and_rebalances_in_december(tmp_path, monkeypatch):
     codes = list(joe10.SEPTEMBER["shares"]) + ["LLY", "JPM", "SPY"]
-    market = FakeMarket(codes, dt.date(2027, 1, 15))
-    monkeypatch.setattr(run.eodhd, "daily", market.daily)
-    monkeypatch.setattr(run.eodhd, "largest", market.largest)
-    monkeypatch.setattr(run.eodhd, "company", market.company)
+    market = FakeMarket(codes, dt.date(2027, 1, 15), holidays={dt.date(2026, 12, 18)})
+    monkeypatch.setattr(common.eodhd, "daily", market.daily)
+    monkeypatch.setattr(common.eodhd, "largest", market.largest)
+    monkeypatch.setattr(common.eodhd, "company", market.company)
     monkeypatch.setattr(joe10, "STATE", tmp_path / "joe10.json")
     monkeypatch.setattr(joe10, "TRACK", tmp_path / "joe10.csv")
     monkeypatch.setattr(joe10, "REPORTS", tmp_path / "reports")
@@ -88,7 +145,7 @@ def test_the_daily_run_starts_after_freezing_and_rebalances_in_december(tmp_path
         @classmethod
         def today(cls):
             return cls.value
-    monkeypatch.setattr(run.dt, "date", Today)
+    monkeypatch.setattr(common.dt, "date", Today)
 
     joe10.init()
     assert joe10.load()["started"] is None
@@ -97,6 +154,7 @@ def test_the_daily_run_starts_after_freezing_and_rebalances_in_december(tmp_path
     state = joe10.load()
     assert state["started"] == "2026-11-04"
     assert "rebalance 2026-12" in state["done"]
+    assert dt.date(2026, 12, 11) in market.ranked_on                  # ranked at the second Friday's close
     assert len(state["portfolio"]["weights"]) == 10
     with joe10.TRACK.open() as f:
         assert len(f.readlines()) > 40

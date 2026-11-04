@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you refer to this forward test, please cite it as below."
-title: "The Tangent Atlas forward tests: the Ken 11 and the Joe 10"
-abstract: "Pre-registered, daily-updated forward tests of two personal indexes (the Ken 11 and the Joe 10) with a volatility thermostat, against SPY and SPY plus cash at the same risk."
+title: "The Joe 10 forward test"
+abstract: "A pre-registered, daily-updated forward test of the Joe 10: the 10 largest US companies, Constant Weight, held at 15% volatility, against SPY and SPY plus cash at the same risk."
 type: software
 authors:
   - name: "Tangent Atlas"

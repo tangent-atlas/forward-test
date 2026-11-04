@@ -1,6 +1,6 @@
-"""The forward test's rules, as pure functions: no network, no files. Every number the track publishes comes from these.
+"""The index's rules, as pure functions: no network, no files (PREREGISTRATION-JOE10.md, section 2).
 
-The rules are frozen in PREREGISTRATION.md; a change here after version 1.0 is a new test, published as such.
+A change here after the model is frozen is a new model, published as such.
 """
 from __future__ import annotations
 
@@ -9,16 +9,7 @@ import math
 import re
 from dataclasses import dataclass
 
-# The thermostat (PREREGISTRATION.md, section 2).
-TARGET_VOLATILITY = 0.1529      # the setting the website's Ken 11 uses
-WINDOW = 21                     # trading days of index returns in the volatility estimate
-RESET_EVERY = 10                # trading days between resets of the stock share
-SALE_FEE = 0.0000105            # the SEC fee (0.21 bp on sales), charged as 0.105 bp on all value traded
-SIZE = 11                       # companies in the index
-
-# Ken's exclusions, by ticker and by company (SEC CIK), so a share class can't slip back in.
-EXCLUDED_CODES = {"GOOGL", "GOOG", "TSLA", "META"}
-EXCLUDED_CIKS = {"1652044", "1318605", "1326801"}   # Alphabet, Tesla, Meta Platforms
+WINDOW = 21                     # trading days of returns in the volatility estimate
 
 US_EXCHANGES = {"NYSE", "NASDAQ", "NYSE ARCA", "NYSE MKT", "AMEX", "BATS", "CBOE", "US"}
 _PARTNERSHIP = re.compile(r"(\bL\.?\s?P\.?|\bLimited Partnership)\s*$", re.IGNORECASE)
@@ -57,8 +48,8 @@ def in_class_units(code: str, shares: float) -> float:
     return shares
 
 
-def eligible(c: Candidate, excluded_codes=EXCLUDED_CODES, excluded_ciks=EXCLUDED_CIKS) -> bool:
-    """US common stock on a US exchange; no partnerships or depositary receipts; not excluded (Ken's exclusions by default)."""
+def eligible(c: Candidate, excluded_codes=frozenset(), excluded_ciks=frozenset()) -> bool:
+    """US common stock on a US exchange; no partnerships or depositary receipts; not on an exclusion list (none by default)."""
     if c.close <= 0 or c.shares <= 0:
         return False
     if c.security_type.lower() != "common stock":
@@ -72,7 +63,7 @@ def eligible(c: Candidate, excluded_codes=EXCLUDED_CODES, excluded_ciks=EXCLUDED
     return c.code not in excluded_codes and c.cik not in excluded_ciks
 
 
-def rank(candidates: list[Candidate], size: int = SIZE, excluded_codes=EXCLUDED_CODES, excluded_ciks=EXCLUDED_CIKS) -> list[tuple[str, float]]:
+def rank(candidates: list[Candidate], size: int, excluded_codes=frozenset(), excluded_ciks=frozenset()) -> list[tuple[str, float]]:
     """The largest companies by full market value: share classes are one company (by CIK), valued at the largest
     shares x price among its classes and held through its most traded class. Returns (code, value), largest first."""
     companies: dict[str, list[Candidate]] = {}
@@ -99,38 +90,3 @@ def volatility(returns: list[float]) -> float:
     n = len(returns)
     mean = sum(returns) / n
     return math.sqrt(sum((r - mean) ** 2 for r in returns) / (n - 1)) * math.sqrt(252)
-
-
-def stock_share(index_returns: list[float]) -> float:
-    """The thermostat's setting from the last WINDOW index returns: min(1, target / volatility)."""
-    return min(1.0, TARGET_VOLATILITY / volatility(index_returns[-WINDOW:]))
-
-
-@dataclass
-class Thermostat:
-    """The portfolio's share in stocks (the rest is cash, earning nothing) and its trading-day count."""
-    share: float
-    day: int = 0
-
-    def step(self, index_return: float, history: list[float]) -> float:
-        """One trading day: returns the portfolio's return. `history` holds the index returns up to and including today."""
-        portfolio = self.share * index_return
-        self.share = self.share * (1 + index_return) / (self.share * (1 + index_return) + (1 - self.share))   # drift
-        self.day += 1
-        if self.day % RESET_EVERY == 0:
-            target = stock_share(history)
-            portfolio -= SALE_FEE * abs(target - self.share) * (1 + portfolio)
-            self.share = target
-        return portfolio
-
-
-def units_at_rebalance(values: dict[str, float], adjusted: dict[str, float], level: float = 1.0) -> dict[str, float]:
-    """Holdings in units of each listing's adjusted (total-return) price, weighted by full market value, worth `level`
-    (the index's value at the rebalance, so the index is continuous): its value is then the sum of units x adjusted
-    price, and its weights drift with prices until the next rebalance."""
-    total = sum(values.values())
-    return {code: level * value / total / adjusted[code] for code, value in values.items()}
-
-
-def index_value(units: dict[str, float], adjusted: dict[str, float]) -> float:
-    return sum(u * adjusted[code] for code, u in units.items())

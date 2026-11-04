@@ -1,7 +1,7 @@
 {
-  "title": "The Tangent Atlas forward tests: the Ken 11 and the Joe 10",
+  "title": "The Joe 10 forward test",
   "upload_type": "dataset",
-  "description": "Pre-registered, daily-updated forward tests of two personal indexes. The Ken 11: the 11 largest US companies by full market value (excluding Alphabet, Tesla and Meta), weighted by size and rebalanced quarterly, with its cash reset every two weeks to hold a chosen volatility. The Joe 10: the 10 largest US companies, Constant Weight, held at 15% volatility. Each is compared with SPY and with SPY plus cash at the same risk. Each model's rules and predictions are frozen in a release before its first day; later versions add results only. Hypothetical performance; not investment advice.",
+  "description": "A pre-registered, daily-updated forward test of the Joe 10, Tangent Atlas's generic model of a personal index: the 10 largest US companies by full market value, Constant Weight, with its cash reset daily to hold 15% volatility. Compared with SPY and with SPY plus cash at the same risk. The rules and predictions are frozen before the first day; each monthly version adds results only. Version 1.0 froze a forward test of the Ken 11 (an illustration), withdrawn before its first close. Hypothetical performance; not investment advice.",
   "creators": [
     {
       "name": "Tangent Atlas"

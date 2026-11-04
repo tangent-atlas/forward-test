@@ -16,7 +16,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import eodhd, rules, run
+from . import common, eodhd, rules
 
 # The Joe 10's rules (frozen).
 SIZE = 10
@@ -26,7 +26,7 @@ WEIGHT_BAND = 0.005      # otherwise a holding is traded back when it is more th
 SALE_FEE = 0.000021      # the SEC fee, 0.21 bp on sales
 EXCLUDED: set[str] = set()
 
-ROOT = run.ROOT
+ROOT = common.ROOT
 STATE = ROOT / "state" / "joe10.json"
 TRACK = ROOT / "data" / "joe10.csv"
 REPORTS = ROOT / "reports"
@@ -135,7 +135,7 @@ def init() -> None:
     if STATE.exists():
         sys.exit("The Joe 10 is already initialized.")
     rebalanced = dt.date.fromisoformat(SEPTEMBER["rebalanced"])
-    data = run.bars(list(SEPTEMBER["shares"]), rebalanced, rebalanced)
+    data = common.bars(list(SEPTEMBER["shares"]), rebalanced, rebalanced)
     closes = {c: s[rebalanced]["close"] for c, s in data.items()}
     adjusted = {c: s[rebalanced]["adjusted"] for c, s in data.items()}
     p = Portfolio(weights_from(SEPTEMBER["shares"], closes))
@@ -169,11 +169,11 @@ def advance(state: dict) -> None:
     p = portfolio_of(state)
     last = dt.date.fromisoformat(state["last_date"])
     today = dt.date.today()
-    data = run.bars(sorted(set(p.weights) | set(p.units) | {"SPY"}), last - dt.timedelta(days=10), today)
+    data = common.bars(sorted(set(p.weights) | set(p.units) | {"SPY"}), last - dt.timedelta(days=10), today)
     rows = []
     for day in sorted(d for d in data["SPY"] if d > last):
         previous = dt.date.fromisoformat(state["last_date"])
-        for kind, target, quarter in run.quarter_events(previous, day):
+        for kind, target, quarter in common.quarter_events(previous, day):
             key = f"{kind} {quarter}"
             if key in state["done"]:
                 continue
@@ -182,13 +182,13 @@ def advance(state: dict) -> None:
             elif state["pending"]:
                 new = set(state["pending"]["shares"]) - set(data)
                 if new:
-                    data.update(run.bars(new, previous - dt.timedelta(days=10), today))
+                    data.update(common.bars(new, previous - dt.timedelta(days=10), today))
                 closes = {c: data[c][max(d for d in data[c] if d <= previous)]["close"] for c in state["pending"]["shares"]}
-                p.rebalance({c: s * closes[c] for c, s in state["pending"]["shares"].items()}, run.adjusted_on(data, previous))
+                p.rebalance({c: s * closes[c] for c, s in state["pending"]["shares"].items()}, common.adjusted_on(data, previous))
                 state["pending"] = None
             state["done"].append(key)
 
-        adjusted = run.adjusted_on(data, day)
+        adjusted = common.adjusted_on(data, day)
         spy = data["SPY"][day]["adjusted"]
         frozen = dt.date.fromisoformat(state["frozen_on"])
         if state["started"] is None:
@@ -232,12 +232,12 @@ def report(month: str) -> Path | None:
     dates = [dt.date.fromisoformat(r["date"]) for r in rows]
     joe = [float(r["joe10"]) for r in rows]
     spy = [float(r["spy"]) for r in rows]
-    j, s = run.stats(joe, dates), run.stats(spy, dates)
+    j, s = common.stats(joe, dates), common.stats(spy, dates)
     scale = j["volatility"] / s["volatility"] if j["volatility"] and s["volatility"] else 1.0
     mixed = [1.0]
     for a, b in zip(spy, spy[1:]):
         mixed.append(mixed[-1] * (1 + scale * (b / a - 1)))
-    m = run.stats(mixed, dates)
+    m = common.stats(mixed, dates)
     pct = lambda x: "n/a" if x is None else f"{x:.1%}"
     line = lambda name, x, v: f"| {name} | {pct(x['total'])} | {pct(x['annual'])} | {pct(x['volatility'])} | {pct(x['worst'])} | ${500_000 * v:,.0f} |"
     text = "\n".join([
@@ -265,7 +265,7 @@ def daily() -> None:
         out = os.environ.get("GITHUB_OUTPUT")
         if path and out:
             with open(out, "a") as f:
-                f.write(f"joe10_report={os.path.relpath(path, ROOT)}\n")
+                f.write(f"report={os.path.relpath(path, ROOT)}\nmonth={before[:7]}\n")
 
 
 if __name__ == "__main__":

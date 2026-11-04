@@ -4,7 +4,7 @@
 
 ## 1. What it is
 
-The Joe 10 is Tangent Atlas's generic model of a personal index, used to compare the personal index with an index fund. Where the Ken 11 on tangentatlas.com is built for one fictional customer (his own risk, his own exclusions), the Joe 10 is built for anyone: the 10 largest US companies, no exclusions, held at about the risk an index fund carries in an average month. Its name says that: an ordinary investor's personal index.
+The Joe 10 is Tangent Atlas's generic model of a personal index, the one used to compare the personal index with an index fund, in backtests and in this forward test. It is built for anyone: the 10 largest US companies, no exclusions, held at about the risk an index fund carries in an average month. Its name says that: an ordinary investor's personal index. (The website's Ken 11 is an illustration built for one fictional customer; it is not tested here.)
 
 ## 2. The rules (frozen)
 
@@ -31,7 +31,7 @@ The Joe 10 is Tangent Atlas's generic model of a personal index, used to compare
 
 **The backtest, on TA500.** Once TA500 is built from 1993: the Joe 10 from the first quarter in which the 25 largest companies are all present and correctly identified (judged from the coverage files `index build` writes, before any return is computed), to October 23, 2026. Reported for the whole period, for 1998–2008 and 2009–2026, and in rolling 5-year windows.
 
-**The forward track.** From the September 2026 holdings (ranked September 11, rebalanced September 18, 2026: NVDA, AAPL, GOOGL, MSFT, AMZN, AVGO, META, TSLA, MU, BRK-B; listed in `forward/joe10.py`), starting at 1.0 at the first close after version 1.1 is released and the track is initialized. Updated after every close; reported monthly with the Ken 11.
+**The forward track.** From the September 2026 holdings (ranked September 11, rebalanced September 18, 2026: NVDA, AAPL, GOOGL, MSFT, AMZN, AVGO, META, TSLA, MU, BRK-B; listed in `forward/joe10.py`), starting at 1.0 at the first close after version 1.1 is released and the track is initialized. Updated after every close; reported monthly.
 
 ## 4. Benchmarks
 
@@ -40,7 +40,7 @@ The Joe 10 is Tangent Atlas's generic model of a personal index, used to compare
 
 ## 5. Predictions
 
-**The founder (F2, as in §18 and §19):** the constant-volatility personal index does not consistently lose to an index ETF held at the same volatility.
+**The founder (F2, as in §18):** the constant-volatility personal index does not consistently lose to an index ETF held at the same volatility.
 
 **Claude:**
 - **J1.** Over the whole backtest, the Joe 10's annual return exceeds SPY plus cash at the same volatility.

@@ -1,17 +1,12 @@
-# The Tangent Atlas forward tests
+# The Joe 10 forward test
 
-Public, dated records of two personal indexes, each run by rules frozen before its first day:
+A public, dated record of how the **Joe 10** performs from November 2026 on: Tangent Atlas's generic model of a personal index, run by rules frozen before its first day.
 
-- **The Ken 11** (from November 2026): the personal index shown on [tangentatlas.com](https://www.tangentatlas.com/your-plan), built for one fictional customer. Rules: [PREREGISTRATION.md](PREREGISTRATION.md). Track: [data/track.csv](data/track.csv).
-- **The Joe 10** (from November 2026): the generic model, the 10 largest US companies, Constant Weight, held at 15% volatility. Rules: [PREREGISTRATION-JOE10.md](PREREGISTRATION-JOE10.md). Track: [data/joe10.csv](data/joe10.csv).
-
-The Ken 11 in detail:
-
-- **The rules and predictions:** [PREREGISTRATION.md](PREREGISTRATION.md), archived on Zenodo as version 1.0 before the track began.
-- **The track:** [data/track.csv](data/track.csv), updated after every US market close: the index's level, the share in stocks, and the Ken 11 and SPY, each starting at 1.0.
+- **The rules and predictions:** [PREREGISTRATION-JOE10.md](PREREGISTRATION-JOE10.md), archived on Zenodo as version 1.1 before the track began.
+- **The track:** [data/joe10.csv](data/joe10.csv), updated after every US market close: the share in stocks, and the Joe 10 and SPY, each starting at 1.0.
 - **Monthly reports:** [reports/](reports/), each also a release that Zenodo archives with its own DOI.
 
-In short, the Ken 11 holds the 11 largest US companies by full market value, leaving out Alphabet, Tesla and Meta, weighted by size and rebalanced quarterly. Every two weeks its cash is reset so its volatility stays at the level its owner chose. It is compared with SPY, and with SPY plus cash at the same risk.
+In short, the Joe 10 holds the 10 largest US companies by full market value, weighted by size at each quarterly rebalance and traded back to those weights every day (Constant Weight). Its cash is set every day so its volatility stays at 15%, about an index fund's volatility in an average month. It is compared with SPY, and with SPY plus cash at the same risk.
 
 ## Check it yourself
 
@@ -19,8 +14,12 @@ The track is computed by [forward/](forward/) from closing prices and nothing el
 
 ```
 python -m pytest            # the rules, on synthetic markets with known answers
-EODHD_API_TOKEN=... python -m forward.run daily
+EODHD_API_TOKEN=... python -m forward.joe10 daily
 ```
+
+## History of this record
+
+Version 1.0 (November 4, 2026) froze a forward test of the Ken 11, the illustration on tangentatlas.com, built for one fictional customer (his own risk and his own exclusions). It was withdrawn on November 4, 2026, before its first close, so that the public record tests a generic model rather than an illustration; no Ken 11 results were ever computed. Its rules remain in version 1.0 on Zenodo.
 
 ## What this is not
 
