@@ -1,6 +1,11 @@
-# The Ken 11 forward test
+# The Tangent Atlas forward tests
 
-A public, dated record of how the **Ken 11** performs from November 2026 on: the personal index shown on [tangentatlas.com](https://www.tangentatlas.com/your-plan), run by rules frozen before its first day.
+Public, dated records of two personal indexes, each run by rules frozen before its first day:
+
+- **The Ken 11** (from November 2026): the personal index shown on [tangentatlas.com](https://www.tangentatlas.com/your-plan), built for one fictional customer. Rules: [PREREGISTRATION.md](PREREGISTRATION.md). Track: [data/track.csv](data/track.csv).
+- **The Joe 10** (from November 2026): the generic model, the 10 largest US companies, Constant Weight, held at 15% volatility. Rules: [PREREGISTRATION-JOE10.md](PREREGISTRATION-JOE10.md). Track: [data/joe10.csv](data/joe10.csv).
+
+The Ken 11 in detail:
 
 - **The rules and predictions:** [PREREGISTRATION.md](PREREGISTRATION.md), archived on Zenodo as version 1.0 before the track began.
 - **The track:** [data/track.csv](data/track.csv), updated after every US market close: the index's level, the share in stocks, and the Ken 11 and SPY, each starting at 1.0.

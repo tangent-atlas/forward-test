@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       command:
-        description: "init (once, to freeze the starting holdings) or daily"
+        description: "daily, init (the Ken 11, once) or init-joe10 (the Joe 10, once)"
         default: daily
         required: true
 
@@ -30,7 +30,12 @@ jobs:
         id: run
         env:
           EODHD_API_TOKEN: ${{ secrets.EODHD_API_TOKEN }}
-        run: python -m forward.run ${{ github.event.inputs.command || 'daily' }}
+        run: |
+          case "${{ github.event.inputs.command || 'daily' }}" in
+            init) python -m forward.run init ;;
+            init-joe10) python -m forward.joe10 init ;;
+            *) python -m forward.run daily && python -m forward.joe10 daily ;;
+          esac
       - name: Commit
         run: |
           git config user.name "forward-test"
@@ -42,4 +47,7 @@ jobs:
         if: steps.run.outputs.month != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v${{ steps.run.outputs.month }}" --title "Results through ${{ steps.run.outputs.month }}" --notes-file "${{ steps.run.outputs.report }}"
+        run: |
+          cat "${{ steps.run.outputs.report }}" > notes.md
+          if [ -n "${{ steps.run.outputs.joe10_report }}" ]; then printf '\n' >> notes.md; cat "${{ steps.run.outputs.joe10_report }}" >> notes.md; fi
+          gh release create "v${{ steps.run.outputs.month }}" --title "Results through ${{ steps.run.outputs.month }}" --notes-file notes.md

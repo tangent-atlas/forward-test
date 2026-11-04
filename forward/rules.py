@@ -57,8 +57,8 @@ def in_class_units(code: str, shares: float) -> float:
     return shares
 
 
-def eligible(c: Candidate) -> bool:
-    """US common stock on a US exchange; no partnerships or depositary receipts; not one of Ken's exclusions."""
+def eligible(c: Candidate, excluded_codes=EXCLUDED_CODES, excluded_ciks=EXCLUDED_CIKS) -> bool:
+    """US common stock on a US exchange; no partnerships or depositary receipts; not excluded (Ken's exclusions by default)."""
     if c.close <= 0 or c.shares <= 0:
         return False
     if c.security_type.lower() != "common stock":
@@ -69,15 +69,15 @@ def eligible(c: Candidate) -> bool:
         return False
     if _PARTNERSHIP.search(c.name or "") or _DEPOSITARY.search(c.name or ""):
         return False
-    return c.code not in EXCLUDED_CODES and c.cik not in EXCLUDED_CIKS
+    return c.code not in excluded_codes and c.cik not in excluded_ciks
 
 
-def rank(candidates: list[Candidate], size: int = SIZE) -> list[tuple[str, float]]:
+def rank(candidates: list[Candidate], size: int = SIZE, excluded_codes=EXCLUDED_CODES, excluded_ciks=EXCLUDED_CIKS) -> list[tuple[str, float]]:
     """The largest companies by full market value: share classes are one company (by CIK), valued at the largest
     shares x price among its classes and held through its most traded class. Returns (code, value), largest first."""
     companies: dict[str, list[Candidate]] = {}
     for c in candidates:
-        if eligible(c):
+        if eligible(c, excluded_codes, excluded_ciks):
             companies.setdefault(c.cik or c.code, []).append(c)
     rows = []
     for key, classes in companies.items():
